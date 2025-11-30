@@ -1,0 +1,53 @@
+services:
+  # Base de données PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: mwteam-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mwteam
+      POSTGRES_PASSWORD: mwteam_password
+      POSTGRES_DB: mwteam
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mwteam"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mwteam-network
+
+  # Application Next.js (Frontend + Backend)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mwteam-app
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      - DATABASE_URL=postgresql://mwteam:mwteam_password@db:5432/mwteam?schema=public
+      - NEXTAUTH_URL=http://localhost:3002
+      - NEXTAUTH_SECRET=dev-secret-key-change-in-production
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - mwteam-network
+    command: sh -c "until pg_isready -h db -U mwteam; do sleep 2; done && sleep 3 && npx prisma db push --accept-data-loss && npm run dev"
+
+volumes:
+  postgres_data:
+
+networks:
+  mwteam-network:
+    driver: bridge

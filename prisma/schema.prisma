@@ -1,0 +1,182 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ATHLETE
+  COACH
+  ADMIN
+}
+
+enum SessionType {
+  FRACTIONNE
+  ENDURANCE
+  RECUPERATION
+  COMPETITION
+  SEUIL
+  VMA
+  AUTRE
+}
+
+enum SessionStatus {
+  PREVUE
+  REALISEE
+  ANNULEE
+}
+
+enum WorkZone {
+  RECUPERATION
+  ENDURANCE_FONDAMENTALE
+  SEUIL
+  VMA
+  VITESSE
+}
+
+enum WeatherCondition {
+  SOLEIL
+  NUAGEUX
+  PLUIE
+  VENT
+  NEIGE
+  AUTRE
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  role          UserRole  @default(ATHLETE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  sessions      TrainingSession[]
+  zones         WorkZoneConfig[]
+  indicators    PhysiologicalIndicator[]
+  performances  Performance[]
+  coachNotes    CoachNote[] @relation("CoachNotes")
+  athletes      User[]     @relation("CoachAthletes")
+  coachId       String?
+  coach         User?      @relation("CoachAthletes", fields: [coachId], references: [id])
+
+  @@index([email])
+  @@index([role])
+  @@index([coachId])
+}
+
+model WorkZoneConfig {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  vma           Float?   // Vitesse Maximale Aérobie (km/h)
+  seuil         Float?   // Allure seuil (min/km)
+  as10          Float?   // Allure Seuil 10km (min/km)
+  as5           Float?   // Allure Seuil 5km (min/km)
+  as21          Float?   // Allure Seuil 21km (min/km)
+  allureMarathon Float?  // Allure marathon (min/km)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model TrainingSession {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type          SessionType
+  status        SessionStatus @default(PREVUE)
+  date          DateTime
+  duration      Int           // Durée en minutes
+  distance      Float?        // Distance en km
+  rpe           Int           // RPE 1-10 (échelle Borg)
+  zones         WorkZone[]    // Zones de travail utilisées
+  notes         String?       // Notes libres
+  location      String?       // Lieu
+  weather       WeatherCondition?
+  cadence       Int?          // Cadence (pas/min)
+  heartRateAvg  Int?          // FC moyenne (bpm)
+  heartRateMax  Int?          // FC max (bpm)
+  isKeySession  Boolean       @default(false) // Séance clé
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([date])
+  @@index([userId, date])
+}
+
+model PhysiologicalIndicator {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  date          DateTime
+  restingHR     Int?      // FC repos (bpm)
+  vma          Float?    // VMA (km/h)
+  vo2max       Float?    // VO2max estimée
+  weight       Float?    // Poids (kg)
+  sleepHours   Float?    // Heures de sommeil
+  sleepQuality  Int?      // Qualité sommeil 1-10
+  fatigue      Int?      // Fatigue 1-10
+  injury       String?   // Description blessure
+  injuryStatus String?   // Statut blessure (active, guérie, etc.)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([date])
+  @@index([userId, date])
+}
+
+model Performance {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type          String   // "chrono", "vma_test", "autre"
+  distance      Float?   // Distance en km (pour chronos)
+  time          Int?     // Temps en secondes
+  date          DateTime
+  notes         String?
+  isPersonalRecord Boolean @default(false)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([date])
+  @@index([userId, date])
+}
+
+model CoachNote {
+  id            String   @id @default(cuid())
+  coachId       String
+  coach         User     @relation("CoachNotes", fields: [coachId], references: [id], onDelete: Cascade)
+  athleteId     String   // ID de l'athlète concerné
+  
+  content       String
+  isPrivate     Boolean  @default(true)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([coachId])
+  @@index([athleteId])
+}
+
