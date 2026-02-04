@@ -138,7 +138,7 @@ async function analyzeContext(context: AgentContext): Promise<ContextAnalysis> {
 
   const historyDesc = historicalPlans?.slice(0, 3).map(p => {
     const total = p.days.reduce((s, d) => s + (d.totalVolume || 0), 0)
-    return `Semaine ${p.weekStart.toLocaleDateString?.() || p.weekStart}: ${total.toFixed(0)}km`
+    return `Semaine ${new Date(p.weekStart).toLocaleDateString()}: ${total.toFixed(0)}km`
   }).join(', ') || 'Pas d\'historique'
 
   const prompt = `Tu es un analyste expert en entraînement middle distance (800m-5000m).
