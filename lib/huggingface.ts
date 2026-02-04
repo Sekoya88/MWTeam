@@ -1,9 +1,11 @@
 import { LLMMessage, LLMOptions } from './llm-provider'
 
 const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY
-// Utilisation de Mistral-Nemo (12B) qui est excellent et très rapide, ou Llama-3-8B-Instruct
-const DEFAULT_MODEL = 'mistralai/Mistral-Nemo-Instruct-2407'
-const API_URL = 'https://api-inference.huggingface.co/models/'
+// Utilisation de Llama-3-8B-Instruct (Meta) : très performant, "petit" modèle, pas Mistral
+// Alternative possible: Microsoft/Phi-3-mini-4k-instruct
+const DEFAULT_MODEL = 'meta-llama/Meta-Llama-3-8B-Instruct'
+// Nouvelle URL requise par Hugging Face (l'ancienne api-inference est dépréciée)
+const API_URL = 'https://router.huggingface.co/models/'
 
 export async function huggingfaceCompletion(
     messages: LLMMessage[],
@@ -26,8 +28,8 @@ export async function huggingfaceCompletion(
     // Si on utilise l'endpoint standard de génération, on doit formater le prompt.
     // Pour Mistral Instruct : <s>[INST] Instruction [/INST] Model answer</s>
 
-    // Essayons l'API Chat Completion de HF (plus robuste)
-    const chatUrl = `https://api-inference.huggingface.co/models/${model}/v1/chat/completions`
+    // Essayons l'API Chat Completion de HF (plus robuste) sur le nouveau routeur
+    const chatUrl = `https://router.huggingface.co/models/${model}/v1/chat/completions`
 
     try {
         const body = {
