@@ -11,7 +11,7 @@ export interface GeneratePlanParams {
     constraints?: string
     historicalPlans?: {
         weekStart: string | Date
-        days: { totalVolume: number }[]
+        days: { totalVolume?: number }[]
     }[]
 }
 
