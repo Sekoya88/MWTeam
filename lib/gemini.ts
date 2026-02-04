@@ -14,8 +14,8 @@ export async function geminiCompletion(
     try {
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
 
-        // Utilisation de gemini-2.0-flash-exp comme demandé (plus récent)
-        const modelName = options.model || 'gemini-2.0-flash-exp'
+        // Utilisation de gemini-2.0-flash (Dernière version stable disponible)
+        const modelName = options.model || 'gemini-2.0-flash'
         const model = genAI.getGenerativeModel({ model: modelName })
 
         // Conversion des messages pour l'API Gemini
