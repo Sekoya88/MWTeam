@@ -52,7 +52,6 @@ jobs:
             --memory 1Gi \
             --cpu 1 \
             --set-env-vars NODE_ENV=production \
-            --set-env-vars NODE_ENV=production \
             --set-env-vars LLM_PROVIDER=gemini \
             --set-env-vars USE_AGENTIC_PLANNING=true \
             --update-secrets DATABASE_URL=mwteam-database-url:latest \
