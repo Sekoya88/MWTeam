@@ -1,7 +1,7 @@
 
 import fs from 'fs'
 import path from 'path'
-import fetch from 'node-fetch'
+// Native fetch used (Node 18+)
 
 const DATA_DIR = path.join(process.cwd(), 'data')
 const DOCS_DIR = path.join(process.cwd(), 'docs/training-knowledge')

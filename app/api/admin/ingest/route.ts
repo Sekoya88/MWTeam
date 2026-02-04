@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server'
 import { HfInference } from '@huggingface/inference'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 const HF_KEY = process.env.HUGGINGFACE_API_KEY
 
