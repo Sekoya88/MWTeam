@@ -15,37 +15,45 @@ export async function huggingfaceCompletion(
     }
 
     const model = options.model || DEFAULT_MODEL
+
+    // Utilisation de l'API standard d'inférence (plus universelle que chat/completions sur le router)
     const url = `${API_URL}${model}`
 
-    // Conversion des messages en prompt formaté pour Mistral/Llama
-    // HF Inference API sur ces modèles attend souvent un format de template ou gère le format chat si le modèle le supporte via l'endpoint v1/chat/completions qui est plus standard
-    // Mais l'endpoint standard HF inference est souvent du raw text generation.
-    // HEUREUSEMENT, beaucoup de modèles récents supportent l'API chat/completions aussi sur HF.
-    // Testons l'approche compatibilité OpenAI de HF (v1/chat/completions)
-    // URL: https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407/v1/chat/completions
+    // Formatage du prompt pour Qwen / ChatML
+    // <|im_start|>system ... <|im_end|>
+    // <|im_start|>user ... <|im_end|>
+    // <|im_start|>assistant
 
-    // Si on utilise l'endpoint standard de génération, on doit formater le prompt.
-    // Pour Mistral Instruct : <s>[INST] Instruction [/INST] Model answer</s>
+    let fullPrompt = ''
 
-    // Essayons l'API Chat Completion de HF (plus robuste) sur le nouveau routeur
-    const chatUrl = `https://router.huggingface.co/models/${model}/v1/chat/completions`
+    for (const msg of messages) {
+        if (msg.role === 'system') {
+            fullPrompt += `<|im_start|>system\n${msg.content}<|im_end|>\n`
+        } else if (msg.role === 'user') {
+            fullPrompt += `<|im_start|>user\n${msg.content}<|im_end|>\n`
+        } else if (msg.role === 'assistant') {
+            fullPrompt += `<|im_start|>assistant\n${msg.content}<|im_end|>\n`
+        }
+    }
+
+    // Amorce de la réponse
+    fullPrompt += `<|im_start|>assistant\n`
 
     try {
-        const body = {
-            model: model,
-            messages: messages.map(m => ({ role: m.role, content: m.content })),
-            temperature: options.temperature ?? 0.7,
-            max_tokens: options.maxTokens ?? 4000,
-            stream: false
-        }
-
-        const res = await fetch(chatUrl, {
+        const res = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${HUGGINGFACE_API_KEY}`,
             },
-            body: JSON.stringify(body),
+            body: JSON.stringify({
+                inputs: fullPrompt,
+                parameters: {
+                    temperature: options.temperature ?? 0.7,
+                    max_new_tokens: options.maxTokens ?? 4000,
+                    return_full_text: false // On veut juste la génération
+                }
+            }),
         })
 
         if (!res.ok) {
@@ -58,17 +66,21 @@ export async function huggingfaceCompletion(
             }
         }
 
-        const data = await res.json() as { choices?: Array<{ message?: { content?: string } }> }
-        const text = data.choices?.[0]?.message?.content
+        const data = await res.json() as Array<{ generated_text: string }> | { generated_text: string }
+
+        // L'API standard renvoie parfois un array, parfois un objet
+        let text = ''
+        if (Array.isArray(data)) {
+            text = data[0]?.generated_text
+        } else if (data && typeof data === 'object' && 'generated_text' in data) {
+            text = (data as { generated_text: string }).generated_text
+        }
 
         if (!text) throw new Error('HuggingFace: empty response')
-        return text
+        return text.trim()
 
     } catch (error: any) {
         console.error('HuggingFace API Error:', error)
-        // Fallback: si l'API chat échoue et qu'on reçoit une 404 (endpoint pas supporté), 
-        // on pourrait tenter l'endpoint raw text generation, mais c'est complexe de formatter le prompt.
-        // On va assumer que le modèle choisi supporte l'API chat (Mistral-Nemo et Llama-3 le font).
         throw new Error(`HuggingFace API Error: ${error.message || error}`)
     }
 }
