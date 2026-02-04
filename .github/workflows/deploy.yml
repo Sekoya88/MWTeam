@@ -52,14 +52,13 @@ jobs:
             --memory 1Gi \
             --cpu 1 \
             --set-env-vars NODE_ENV=production \
-            --set-env-vars LLM_PROVIDER=vertex \
-            --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID \
-            --set-env-vars VERTEX_AI_LOCATION=europe-west1 \
-            --set-env-vars VERTEX_AI_MODEL=gemini-1.5-flash \
+            --set-env-vars NODE_ENV=production \
+            --set-env-vars LLM_PROVIDER=gemini \
             --set-env-vars USE_AGENTIC_PLANNING=true \
             --update-secrets DATABASE_URL=mwteam-database-url:latest \
             --update-secrets NEXTAUTH_SECRET=mwteam-nextauth-secret:latest \
-            --update-secrets NEXTAUTH_URL=mwteam-nextauth-url:latest
+            --update-secrets NEXTAUTH_URL=mwteam-nextauth-url:latest \
+            --update-secrets GEMINI_API_KEY=gemini-api-key:latest
 
       - name: Show deployed URL
         run: |

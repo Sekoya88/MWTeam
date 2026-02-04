@@ -5,6 +5,7 @@
  */
 
 import { vertexCompletion } from './vertex'
+import { geminiCompletion } from './gemini'
 
 export interface LLMMessage {
   role: 'user' | 'assistant' | 'system'
@@ -49,13 +50,14 @@ async function mistralCompletion(messages: LLMMessage[], options: LLMOptions = {
 }
 
 /**
- * Génère une réponse via le fournisseur configuré (Vertex ou Mistral).
+ * Génère une réponse via le fournisseur configuré (Vertex, Gemini ou Mistral).
  */
 export async function generateCompletion(
   messages: LLMMessage[],
   options: LLMOptions = {}
 ): Promise<string> {
-  const provider = (process.env.LLM_PROVIDER || 'mistral').toLowerCase()
+  const provider = (process.env.LLM_PROVIDER || 'gemini').toLowerCase()
+
   if (provider === 'vertex') {
     return vertexCompletion(messages, {
       model: options.model,
@@ -63,5 +65,14 @@ export async function generateCompletion(
       maxTokens: options.maxTokens,
     })
   }
+
+  if (provider === 'gemini') {
+    return geminiCompletion(messages, {
+      model: options.model,
+      temperature: options.temperature,
+      maxTokens: options.maxTokens,
+    })
+  }
+
   return mistralCompletion(messages, options)
 }
