@@ -52,12 +52,12 @@ jobs:
             --memory 1Gi \
             --cpu 1 \
             --set-env-vars NODE_ENV=production \
-            --set-env-vars LLM_PROVIDER=gemini \
+            --set-env-vars LLM_PROVIDER=huggingface \
             --set-env-vars USE_AGENTIC_PLANNING=true \
             --update-secrets DATABASE_URL=mwteam-database-url:latest \
             --update-secrets NEXTAUTH_SECRET=mwteam-nextauth-secret:latest \
             --update-secrets NEXTAUTH_URL=mwteam-nextauth-url:latest \
-            --update-secrets GEMINI_API_KEY=gemini-api-key:latest
+            --update-secrets HUGGINGFACE_API_KEY=huggingface-api-key:latest
 
       - name: Show deployed URL
         run: |
