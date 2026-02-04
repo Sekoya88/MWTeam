@@ -11,7 +11,7 @@
  * Parallel execution avec Promise.all où possible
  */
 
-import { GeneratePlanParams, GeneratedPlan, GeneratedDay } from '@/lib/mistral'
+import { GeneratePlanParams, GeneratedPlan, GeneratedDay } from '@/lib/types'
 
 import { generateCompletion } from '@/lib/llm-provider'
 
