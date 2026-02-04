@@ -1,9 +1,8 @@
 import { LLMMessage, LLMOptions } from './llm-provider'
 
 const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY
-// Utilisation de Llama-3-8B-Instruct (Meta) : très performant, "petit" modèle, pas Mistral
-// Alternative possible: Microsoft/Phi-3-mini-4k-instruct
-const DEFAULT_MODEL = 'meta-llama/Meta-Llama-3-8B-Instruct'
+// Utilisation de Qwen 2.5 7B Instruct (Alibaba) : Meilleur petit modèle actuel, Open Source, Non-restreint (pas de validation licence)
+const DEFAULT_MODEL = 'Qwen/Qwen2.5-7B-Instruct'
 // Nouvelle URL requise par Hugging Face (l'ancienne api-inference est dépréciée)
 const API_URL = 'https://router.huggingface.co/models/'
 
