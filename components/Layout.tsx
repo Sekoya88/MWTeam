@@ -5,13 +5,23 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from './ui/Button'
 import { Logo } from './Logo'
-import { User, LogOut, Menu } from 'lucide-react'
-import { useState } from 'react'
+import { User, LogOut, Menu, Bell } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
+
+  useEffect(() => {
+    if (session) {
+      fetch('/api/notifications?unreadOnly=true')
+        .then(res => res.json())
+        .then(data => setUnreadNotifications(data.unreadCount || 0))
+        .catch(() => {})
+    }
+  }, [session])
 
   if (!session) return <>{children}</>
 
@@ -21,15 +31,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navLinks = isAthlete
     ? [
         { href: '/dashboard', label: 'Tableau de bord' },
+        { href: '/dashboard/planning', label: 'Planning' },
         { href: '/sessions', label: 'Séances' },
         { href: '/statistics', label: 'Statistiques' },
         { href: '/zones', label: 'Zones' },
         { href: '/indicators', label: 'Indicateurs' },
         { href: '/performances', label: 'Performances' },
       ]
+    : session.user.role === 'ADMIN'
+    ? [
+        { href: '/admin', label: 'Admin' },
+        { href: '/coach', label: 'Dashboard Coach' },
+        { href: '/coach/plans', label: 'Plannings' },
+        { href: '/coach/athletes', label: 'Mes Athlètes' },
+        { href: '/coach/assistant', label: 'Assistant RAG' },
+      ]
     : [
         { href: '/coach', label: 'Dashboard Coach' },
-        { href: '/coach/athletes', label: 'Athlètes' },
+        { href: '/coach/plans', label: 'Plannings' },
+        { href: '/coach/athletes', label: 'Mes Athlètes' },
+        { href: '/coach/assistant', label: 'Assistant RAG' },
       ]
 
   return (
@@ -71,6 +92,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* User Menu */}
             <div className="flex items-center space-x-4">
+              {unreadNotifications > 0 && (
+                <Link href="/dashboard/planning" className="relative">
+                  <Bell className="h-5 w-5 text-gray-600" />
+                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-600 text-white text-xs flex items-center justify-center font-bold">
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </span>
+                </Link>
+              )}
               <div className="hidden sm:flex items-center space-x-3 px-4 py-2 rounded-lg bg-gray-50">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-white text-xs font-semibold">
                   <User className="h-4 w-4" />

@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mwteam"]
+      test: [ "CMD-SHELL", "pg_isready -U mwteam" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,7 +33,13 @@ services:
       - DATABASE_URL=postgresql://mwteam:mwteam_password@db:5432/mwteam?schema=public
       - NEXTAUTH_URL=http://localhost:3002
       - NEXTAUTH_SECRET=dev-secret-key-change-in-production
+      # Configuration LLM - Utilise GCP Vertex AI avec Gemini
+      - LLM_PROVIDER=vertex
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-mwteam-dev}
+      - VERTEX_AI_LOCATION=europe-west1
+      - VERTEX_AI_MODEL=gemini-1.5-flash
       - NODE_ENV=development
+      - USE_AGENTIC_PLANNING=true
     volumes:
       - .:/app
       - /app/node_modules
@@ -47,6 +53,7 @@ services:
 
 volumes:
   postgres_data:
+
 
 networks:
   mwteam-network:

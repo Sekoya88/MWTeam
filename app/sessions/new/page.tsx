@@ -75,7 +75,9 @@ export default function NewSessionPage() {
       if (formData.cadence) payload.cadence = Number(formData.cadence)
       if (formData.heartRateAvg) payload.heartRateAvg = Number(formData.heartRateAvg)
       if (formData.heartRateMax) payload.heartRateMax = Number(formData.heartRateMax)
-      if (formData.weather) payload.weather = formData.weather
+      if (formData.weather && formData.weather.trim() !== '') {
+        payload.weather = formData.weather
+      }
 
       const response = await fetch('/api/sessions', {
         method: 'POST',
@@ -301,11 +303,10 @@ export default function NewSessionPage() {
                       key={zone.value}
                       type="button"
                       onClick={() => toggleZone(zone.value)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
-                        formData.zones.includes(zone.value)
+                      className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all ${formData.zones.includes(zone.value)
                           ? 'bg-black text-white border-black shadow-soft'
                           : 'bg-white text-black border-gray-300 hover:border-black'
-                      }`}
+                        }`}
                     >
                       {zone.label}
                     </button>

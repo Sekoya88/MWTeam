@@ -1,0 +1,40 @@
+# Cloud Build configuration pour MWTeam
+# Déploiement sur Cloud Run avec Vertex AI
+
+steps:
+  # Build l'image Docker
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/mwteam:$COMMIT_SHA', '.']
+
+  # Push l'image vers Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/mwteam:$COMMIT_SHA']
+
+  # Déployer sur Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'mwteam'
+      - '--image=gcr.io/$PROJECT_ID/mwteam:$COMMIT_SHA'
+      - '--region=europe-west1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--memory=1Gi'
+      - '--cpu=1'
+      - '--set-env-vars=NODE_ENV=production'
+      - '--set-env-vars=LLM_PROVIDER=vertex'
+      - '--set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
+      - '--set-env-vars=VERTEX_AI_LOCATION=europe-west1'
+      - '--set-env-vars=VERTEX_AI_MODEL=gemini-1.5-flash'
+      - '--set-env-vars=USE_AGENTIC_PLANNING=true'
+      # Les secrets doivent être configurés dans Cloud Run
+      - '--update-secrets=DATABASE_URL=mwteam-database-url:latest'
+      - '--update-secrets=NEXTAUTH_SECRET=mwteam-nextauth-secret:latest'
+
+images:
+  - 'gcr.io/$PROJECT_ID/mwteam:$COMMIT_SHA'
+
+# Options de timeout (build peut prendre du temps avec npm)
+timeout: '1200s'

@@ -4,20 +4,29 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+// Helper to parse date strings flexibly
+const flexibleDate = z.string().transform((val) => {
+  const date = new Date(val)
+  if (isNaN(date.getTime())) {
+    throw new Error(`Invalid date: ${val}`)
+  }
+  return date.toISOString()
+})
+
 const sessionSchema = z.object({
   type: z.enum(['FRACTIONNE', 'ENDURANCE', 'RECUPERATION', 'COMPETITION', 'SEUIL', 'VMA', 'AUTRE']),
   status: z.enum(['PREVUE', 'REALISEE', 'ANNULEE']).optional(),
-  date: z.string().datetime(),
-  duration: z.number().int().positive(),
-  distance: z.number().positive().optional(),
-  rpe: z.number().int().min(1).max(10),
+  date: flexibleDate,
+  duration: z.coerce.number().int().positive(),
+  distance: z.coerce.number().positive().optional().nullable().catch(null),
+  rpe: z.coerce.number().int().min(1).max(10).optional().catch(5),
   zones: z.array(z.enum(['RECUPERATION', 'ENDURANCE_FONDAMENTALE', 'SEUIL', 'VMA', 'VITESSE'])).optional(),
-  notes: z.string().optional(),
-  location: z.string().optional(),
-  weather: z.enum(['SOLEIL', 'NUAGEUX', 'PLUIE', 'VENT', 'NEIGE', 'AUTRE']).optional(),
-  cadence: z.number().int().positive().optional(),
-  heartRateAvg: z.number().int().positive().optional(),
-  heartRateMax: z.number().int().positive().optional(),
+  notes: z.string().optional().nullable(),
+  location: z.string().optional().nullable(),
+  weather: z.enum(['SOLEIL', 'NUAGEUX', 'PLUIE', 'VENT', 'NEIGE', 'AUTRE']).optional().nullable().catch(null),
+  cadence: z.coerce.number().int().positive().optional().nullable().catch(null),
+  heartRateAvg: z.coerce.number().int().positive().optional().nullable().catch(null),
+  heartRateMax: z.coerce.number().int().positive().optional().nullable().catch(null),
   isKeySession: z.boolean().optional(),
 })
 
@@ -73,6 +82,7 @@ export async function POST(request: Request) {
         status: validated.status || 'PREVUE',
         zones: validated.zones || [],
         isKeySession: validated.isKeySession || false,
+        rpe: validated.rpe ?? 5,
       }
     })
 
@@ -92,4 +102,3 @@ export async function POST(request: Request) {
     )
   }
 }
-

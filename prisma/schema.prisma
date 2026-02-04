@@ -49,25 +49,34 @@ enum WeatherCondition {
   AUTRE
 }
 
+enum PlanStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String
-  firstName     String
-  lastName      String
-  role          UserRole  @default(ATHLETE)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      UserRole @default(ATHLETE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  sessions      TrainingSession[]
-  zones         WorkZoneConfig[]
-  indicators    PhysiologicalIndicator[]
-  performances  Performance[]
-  coachNotes    CoachNote[] @relation("CoachNotes")
-  athletes      User[]     @relation("CoachAthletes")
-  coachId       String?
-  coach         User?      @relation("CoachAthletes", fields: [coachId], references: [id])
+  sessions       TrainingSession[]
+  zones          WorkZoneConfig[]
+  indicators     PhysiologicalIndicator[]
+  performances   Performance[]
+  coachNotes     CoachNote[]              @relation("CoachNotes")
+  athletes       User[]                   @relation("CoachAthletes")
+  coachId        String?
+  coach          User?                    @relation("CoachAthletes", fields: [coachId], references: [id])
+  plansAsCoach   WeeklyPlan[]             @relation("CoachPlans")
+  plansAsAthlete WeeklyPlan[]             @relation("AthletePlans")
+  notifications  Notification[]           @relation("UserNotifications")
 
   @@index([email])
   @@index([role])
@@ -75,45 +84,47 @@ model User {
 }
 
 model WorkZoneConfig {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  vma           Float?   // Vitesse Maximale Aérobie (km/h)
-  seuil         Float?   // Allure seuil (min/km)
-  as10          Float?   // Allure Seuil 10km (min/km)
-  as5           Float?   // Allure Seuil 5km (min/km)
-  as21          Float?   // Allure Seuil 21km (min/km)
-  allureMarathon Float?  // Allure marathon (min/km)
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  vma            Float? // Vitesse Maximale Aérobie (km/h)
+  sv1            Float? // Seuil Aérobie (min/km)
+  sv2            Float? // Seuil Anaérobie (min/km)
+  seuil          Float? // Allure seuil (min/km) - Ancien champ pour compatibilité
+  as10           Float? // Allure Seuil 10km (min/km)
+  as5            Float? // Allure Seuil 5km (min/km)
+  as21           Float? // Allure Seuil 21km (min/km)
+  allureMarathon Float? // Allure marathon (min/km)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }
 
 model TrainingSession {
-  id            String        @id @default(cuid())
-  userId        String
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  type          SessionType
-  status        SessionStatus @default(PREVUE)
-  date          DateTime
-  duration      Int           // Durée en minutes
-  distance      Float?        // Distance en km
-  rpe           Int           // RPE 1-10 (échelle Borg)
-  zones         WorkZone[]    // Zones de travail utilisées
-  notes         String?       // Notes libres
-  location      String?       // Lieu
-  weather       WeatherCondition?
-  cadence       Int?          // Cadence (pas/min)
-  heartRateAvg  Int?          // FC moyenne (bpm)
-  heartRateMax  Int?          // FC max (bpm)
-  isKeySession  Boolean       @default(false) // Séance clé
-  
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type         SessionType
+  status       SessionStatus     @default(PREVUE)
+  date         DateTime
+  duration     Int // Durée en minutes
+  distance     Float? // Distance en km
+  rpe          Int // RPE 1-10 (échelle Borg)
+  zones        WorkZone[] // Zones de travail utilisées
+  notes        String? // Notes libres
+  location     String? // Lieu
+  weather      WeatherCondition?
+  cadence      Int? // Cadence (pas/min)
+  heartRateAvg Int? // FC moyenne (bpm)
+  heartRateMax Int? // FC max (bpm)
+  isKeySession Boolean           @default(false) // Séance clé
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([date])
@@ -121,23 +132,23 @@ model TrainingSession {
 }
 
 model PhysiologicalIndicator {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  date          DateTime
-  restingHR     Int?      // FC repos (bpm)
-  vma          Float?    // VMA (km/h)
-  vo2max       Float?    // VO2max estimée
-  weight       Float?    // Poids (kg)
-  sleepHours   Float?    // Heures de sommeil
-  sleepQuality  Int?      // Qualité sommeil 1-10
-  fatigue      Int?      // Fatigue 1-10
-  injury       String?   // Description blessure
-  injuryStatus String?   // Statut blessure (active, guérie, etc.)
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date         DateTime
+  restingHR    Int? // FC repos (bpm)
+  vma          Float? // VMA (km/h)
+  vo2max       Float? // VO2max estimée
+  weight       Float? // Poids (kg)
+  sleepHours   Float? // Heures de sommeil
+  sleepQuality Int? // Qualité sommeil 1-10
+  fatigue      Int? // Fatigue 1-10
+  injury       String? // Description blessure
+  injuryStatus String? // Statut blessure (active, guérie, etc.)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([date])
@@ -145,19 +156,19 @@ model PhysiologicalIndicator {
 }
 
 model Performance {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  type          String   // "chrono", "vma_test", "autre"
-  distance      Float?   // Distance en km (pour chronos)
-  time          Int?     // Temps en secondes
-  date          DateTime
-  notes         String?
-  isPersonalRecord Boolean @default(false)
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type             String // "chrono", "vma_test", "autre"
+  distance         Float? // Distance en km (pour chronos)
+  time             Int? // Temps en secondes
+  date             DateTime
+  notes            String?
+  isPersonalRecord Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([date])
@@ -165,18 +176,99 @@ model Performance {
 }
 
 model CoachNote {
-  id            String   @id @default(cuid())
-  coachId       String
-  coach         User     @relation("CoachNotes", fields: [coachId], references: [id], onDelete: Cascade)
-  athleteId     String   // ID de l'athlète concerné
-  
-  content       String
-  isPrivate     Boolean  @default(true)
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String @id @default(cuid())
+  coachId   String
+  coach     User   @relation("CoachNotes", fields: [coachId], references: [id], onDelete: Cascade)
+  athleteId String // ID de l'athlète concerné
+
+  content   String
+  isPrivate Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([coachId])
   @@index([athleteId])
 }
 
+model WeeklyPlan {
+  id        String @id @default(cuid())
+  coachId   String
+  coach     User   @relation("CoachPlans", fields: [coachId], references: [id], onDelete: Cascade)
+  athleteId String
+  athlete   User   @relation("AthletePlans", fields: [athleteId], references: [id], onDelete: Cascade)
+
+  weekStart DateTime // Lundi de la semaine
+  weekEnd   DateTime // Dimanche de la semaine
+  status    PlanStatus @default(DRAFT)
+
+  // Métadonnées
+  objective     String? // Objectif de la semaine (base, résistance, compétition, etc.)
+  notes         String? // Notes du coach
+  generatedByAI Boolean @default(false)
+  aiPrompt      String? // Prompt utilisé pour génération IA
+
+  // Relations
+  days PlanDay[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([athleteId, weekStart])
+  @@index([coachId])
+  @@index([athleteId])
+  @@index([weekStart])
+}
+
+model PlanDay {
+  id     String     @id @default(cuid())
+  planId String
+  plan   WeeklyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  dayOfWeek Int // 0=Lundi, 6=Dimanche
+  date      DateTime // Date exacte du jour
+
+  // Séance
+  sessionDescription String? // Description libre (ex: "JOG 1H & MUSCU")
+  sessionType        SessionType?
+
+  // Zones (en km)
+  zone1Endurance Float? // Zone 1 (E)
+  zone2Seuil     Float? // Zone 2 (Seuils)
+  zone3SupraMax  Float? // Zone 3 (Supra max)
+  zoneVitesse    Float? // VITESSE (FR)
+
+  // Volume total
+  totalVolume Float? // Volume total du jour (km)
+
+  // Chronos cibles (optionnel)
+  targetTimes String? // Ex: "1'06-1'04-1'05"
+
+  // Notes
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([planId])
+  @@index([date])
+}
+
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  type    String // "NEW_PLAN", "PLAN_UPDATED", etc.
+  title   String
+  message String
+  read    Boolean @default(false)
+  link    String? // URL vers la ressource
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([read])
+  @@index([userId, read])
+}

@@ -20,17 +20,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
     }
 
-    // Récupérer tous les athlètes (pour l'instant, plus tard filtrer par coachId)
+    // Récupérer tous les athlètes (avec leur coachId pour voir qui est assigné)
     const athletes = await prisma.user.findMany({
       where: {
         role: 'ATHLETE',
-        // coachId: session.user.id, // À activer quand on aura la relation coach-athlète
       },
       select: {
         id: true,
         email: true,
         firstName: true,
         lastName: true,
+        coachId: true,
       },
     })
 

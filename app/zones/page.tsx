@@ -1,15 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Layout } from '@/components/Layout'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Target, Save, CheckCircle2 } from 'lucide-react'
+import { decimalToTimeString, timeStringToDecimal, formatPace } from '@/lib/time-format'
 
 interface WorkZoneConfig {
   id: string
   vma: number | null
+  sv1: number | null
+  sv2: number | null
   seuil: number | null
   as10: number | null
   as5: number | null
@@ -17,56 +21,97 @@ interface WorkZoneConfig {
   allureMarathon: number | null
 }
 
-export default function ZonesPage() {
+function ZonesPageContent() {
+  const searchParams = useSearchParams()
+  const athleteId = searchParams.get('athleteId')
   const [zones, setZones] = useState<WorkZoneConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     vma: '',
-    seuil: '',
-    as10: '',
-    as5: '',
-    as21: '',
-    allureMarathon: '',
+    sv1: '',
+    sv2: '',
   })
 
   useEffect(() => {
-    fetch('/api/zones')
-      .then(res => res.json())
-      .then(data => {
-        if (data.zones) {
+    const fetchZones = async () => {
+      try {
+        const url = athleteId ? `/api/zones?userId=${athleteId}` : '/api/zones'
+        const res = await fetch(url)
+        const data = await res.json()
+        if (data.zones && data.zones.length > 0) {
+          const latest = data.zones[0]
+          setZones(latest)
+          setFormData({
+            vma: latest.vma?.toString() || '',
+            sv1: formatPace(latest.sv1),
+            sv2: formatPace(latest.sv2),
+          })
+        } else if (data.zones) {
+          // Format ancien (objet unique)
           setZones(data.zones)
           setFormData({
             vma: data.zones.vma?.toString() || '',
-            seuil: data.zones.seuil?.toString() || '',
-            as10: data.zones.as10?.toString() || '',
-            as5: data.zones.as5?.toString() || '',
-            as21: data.zones.as21?.toString() || '',
-            allureMarathon: data.zones.allureMarathon?.toString() || '',
+            sv1: formatPace(data.zones.sv1),
+            sv2: formatPace(data.zones.sv2),
           })
         }
         setLoading(false)
-      })
-      .catch(err => {
+      } catch (err) {
         console.error(err)
         setLoading(false)
-      })
-  }, [])
+      }
+    }
+    fetchZones()
+  }, [athleteId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setSaved(false)
+    setError(null)
 
     try {
-      const payload: any = {}
-      if (formData.vma) payload.vma = Number(formData.vma)
-      if (formData.seuil) payload.seuil = Number(formData.seuil)
-      if (formData.as10) payload.as10 = Number(formData.as10)
-      if (formData.as5) payload.as5 = Number(formData.as5)
-      if (formData.as21) payload.as21 = Number(formData.as21)
-      if (formData.allureMarathon) payload.allureMarathon = Number(formData.allureMarathon)
+      // Validation des champs requis
+      if (!formData.vma || !formData.sv1 || !formData.sv2) {
+        setError('Veuillez remplir tous les champs obligatoires')
+        setSaving(false)
+        return
+      }
+
+      // Convertir SV1 et SV2 du format 3:20 en décimal
+      const sv1Decimal = timeStringToDecimal(formData.sv1)
+      const sv2Decimal = timeStringToDecimal(formData.sv2)
+
+      if (sv1Decimal === null) {
+        setError('Format invalide pour SV1. Utilisez le format M:SS (ex: 3:20)')
+        setSaving(false)
+        return
+      }
+
+      if (sv2Decimal === null) {
+        setError('Format invalide pour SV2. Utilisez le format M:SS (ex: 3:15)')
+        setSaving(false)
+        return
+      }
+
+      const vmaNum = Number(formData.vma)
+      if (isNaN(vmaNum) || vmaNum <= 0) {
+        setError('VMA doit être un nombre positif')
+        setSaving(false)
+        return
+      }
+
+      const payload: any = {
+        vma: vmaNum,
+        sv1: sv1Decimal,
+        sv2: sv2Decimal,
+      }
+      if (athleteId) payload.userId = athleteId
+
+      console.log('Sending payload:', payload)
 
       const response = await fetch('/api/zones', {
         method: 'POST',
@@ -74,14 +119,23 @@ export default function ZonesPage() {
         body: JSON.stringify(payload),
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        setZones(data.zones)
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
+      const data = await response.json()
+
+      if (!response.ok) {
+        const errorMsg = data.error || data.details?.[0]?.message || 'Erreur lors de la sauvegarde'
+        setError(errorMsg)
+        console.error('API Error:', data)
+        return
       }
+
+      // Succès
+      setZones(data.zones)
+      setSaved(true)
+      setError(null)
+      setTimeout(() => setSaved(false), 3000)
     } catch (err) {
-      console.error(err)
+      console.error('Submit error:', err)
+      setError(err instanceof Error ? err.message : 'Erreur lors de la sauvegarde')
     } finally {
       setSaving(false)
     }
@@ -117,10 +171,10 @@ export default function ZonesPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="p-4 rounded-lg border-2 border-gray-200 hover:border-black transition-colors">
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    VMA (km/h)
+                    VMA (km/h) *
                   </label>
                   <Input
                     type="number"
@@ -129,85 +183,47 @@ export default function ZonesPage() {
                     value={formData.vma}
                     onChange={(e) => setFormData({ ...formData, vma: e.target.value })}
                     placeholder="Ex: 18.5"
+                    required
                   />
                   <p className="text-xs text-gray-500 mt-2">Vitesse Maximale Aérobie</p>
                 </div>
 
                 <div className="p-4 rounded-lg border-2 border-gray-200 hover:border-black transition-colors">
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Seuil (min/km)
+                    SV1 (Seuil Aérobie) - min/km *
                   </label>
                   <Input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={formData.seuil}
-                    onChange={(e) => setFormData({ ...formData, seuil: e.target.value })}
-                    placeholder="Ex: 3.75"
+                    type="text"
+                    value={formData.sv1}
+                    onChange={(e) => setFormData({ ...formData, sv1: e.target.value })}
+                    placeholder="Ex: 3:20"
+                    required
+                    pattern="\d+:\d{2}"
                   />
-                  <p className="text-xs text-gray-500 mt-2">Allure seuil</p>
+                  <p className="text-xs text-gray-500 mt-2">Format: M:SS (ex: 3:20 pour 3 minutes 20 secondes)</p>
                 </div>
 
                 <div className="p-4 rounded-lg border-2 border-gray-200 hover:border-black transition-colors">
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    AS10 (min/km)
+                    SV2 (Seuil Anaérobie) - min/km *
                   </label>
                   <Input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={formData.as10}
-                    onChange={(e) => setFormData({ ...formData, as10: e.target.value })}
-                    placeholder="Ex: 3.83"
+                    type="text"
+                    value={formData.sv2}
+                    onChange={(e) => setFormData({ ...formData, sv2: e.target.value })}
+                    placeholder="Ex: 3:15"
+                    required
+                    pattern="\d+:\d{2}"
                   />
-                  <p className="text-xs text-gray-500 mt-2">Allure Seuil 10km</p>
-                </div>
-
-                <div className="p-4 rounded-lg border-2 border-gray-200 hover:border-black transition-colors">
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    AS5 (min/km)
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={formData.as5}
-                    onChange={(e) => setFormData({ ...formData, as5: e.target.value })}
-                    placeholder="Ex: 3.67"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">Allure Seuil 5km</p>
-                </div>
-
-                <div className="p-4 rounded-lg border-2 border-gray-200 hover:border-black transition-colors">
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    AS21 (min/km)
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={formData.as21}
-                    onChange={(e) => setFormData({ ...formData, as21: e.target.value })}
-                    placeholder="Ex: 4.00"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">Allure Seuil 21km</p>
-                </div>
-
-                <div className="p-4 rounded-lg border-2 border-gray-200 hover:border-black transition-colors">
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Allure Marathon (min/km)
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={formData.allureMarathon}
-                    onChange={(e) => setFormData({ ...formData, allureMarathon: e.target.value })}
-                    placeholder="Ex: 4.25"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">Allure cible marathon</p>
+                  <p className="text-xs text-gray-500 mt-2">Format: M:SS (ex: 3:15 pour 3 minutes 15 secondes)</p>
                 </div>
               </div>
+
+              {error && (
+                <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800 font-medium">{error}</p>
+                </div>
+              )}
 
               <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                 {saved && (
@@ -217,7 +233,12 @@ export default function ZonesPage() {
                   </div>
                 )}
                 <div className="ml-auto">
-                  <Button type="submit" disabled={saving} loading={saving} className="flex items-center space-x-2">
+                  <Button 
+                    type="submit" 
+                    disabled={saving || !formData.vma || !formData.sv1 || !formData.sv2} 
+                    loading={saving}
+                    className="flex items-center space-x-2"
+                  >
                     <Save className="h-4 w-4" />
                     <span>Enregistrer les zones</span>
                   </Button>
@@ -228,5 +249,19 @@ export default function ZonesPage() {
         </Card>
       </div>
     </Layout>
+  )
+}
+
+export default function ZonesPage() {
+  return (
+    <Suspense fallback={
+      <Layout>
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+        </div>
+      </Layout>
+    }>
+      <ZonesPageContent />
+    </Suspense>
   )
 }

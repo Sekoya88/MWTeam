@@ -118,7 +118,7 @@ export default function CoachDashboardPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {athletes.map(athlete => (
-              <Card key={athlete.id} className="hover:shadow-medium transition-all">
+              <Card key={athlete.id} className="hover:shadow-medium transition-all hover-lift">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>{athlete.firstName} {athlete.lastName}</span>

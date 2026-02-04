@@ -36,6 +36,35 @@ body {
   transition-duration: 150ms;
 }
 
+/* Enhanced hover effects */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Gradient backgrounds */
+.gradient-bg-primary {
+  background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+}
+
+.gradient-bg-purple {
+  background: linear-gradient(135deg, #9333ea 0%, #3b82f6 100%);
+}
+
+/* Card enhancements */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

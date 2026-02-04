@@ -14,6 +14,7 @@ export default function RegisterPage() {
     password: '',
     firstName: '',
     lastName: '',
+    role: 'ATHLETE' as 'ATHLETE' | 'COACH' | 'ADMIN',
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -24,22 +25,29 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
+      const payload = {
+        ...formData,
+        email: formData.email.trim().toLowerCase(),
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+      }
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({ error: 'Erreur lors de l\'inscription' }))
 
       if (!response.ok) {
         setError(data.error || 'Erreur lors de l\'inscription')
+        setLoading(false)
         return
       }
 
       router.push('/auth/signin?registered=true')
     } catch (err) {
-      setError('Une erreur est survenue')
+      setError('Une erreur est survenue. Vérifiez votre connexion.')
     } finally {
       setLoading(false)
     }
@@ -121,6 +129,26 @@ export default function RegisterPage() {
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="Minimum 6 caractères"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="role" className="block text-sm font-semibold text-gray-900 mb-2">
+                  Rôle
+                </label>
+                <select
+                  id="role"
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'ATHLETE' | 'COACH' | 'ADMIN' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition-all"
+                >
+                  <option value="ATHLETE">Athlète</option>
+                  <option value="COACH">Coach</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.role === 'COACH' && 'En tant que coach, vous pourrez créer des plannings pour vos athlètes'}
+                  {formData.role === 'ATHLETE' && 'En tant qu\'athlète, vous pourrez suivre vos entraînements'}
+                </p>
               </div>
             </div>
             
