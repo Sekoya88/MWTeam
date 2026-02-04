@@ -6,7 +6,7 @@ on:
   workflow_dispatch: # Manual trigger
 
 env:
-  PROJECT_ID: mwteam-coaching
+  PROJECT_ID: mwteam
   REGION: europe-west1
   SERVICE: mwteam
 
