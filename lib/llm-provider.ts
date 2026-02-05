@@ -7,6 +7,7 @@
 import { vertexCompletion } from './vertex'
 import { geminiCompletion } from './gemini'
 import { huggingfaceCompletion } from './huggingface'
+import { ollamaCompletion } from './ollama'
 
 export interface LLMMessage {
   role: 'user' | 'assistant' | 'system'
@@ -39,6 +40,14 @@ export async function generateCompletion(
 
   if (provider === 'gemini') {
     return geminiCompletion(messages, {
+      model: options.model,
+      temperature: options.temperature,
+      maxTokens: options.maxTokens,
+    })
+  }
+
+  if (provider === 'ollama') {
+    return ollamaCompletion(messages, {
       model: options.model,
       temperature: options.temperature,
       maxTokens: options.maxTokens,
