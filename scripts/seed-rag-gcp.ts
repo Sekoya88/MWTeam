@@ -193,6 +193,119 @@ Récupération :
 - Massage/rouleau : 15-20min par zone ciblée.`,
         metadata: { discipline: 'general', cycle: 'macro', theme: 'nutrition', niveau: 'tous', source: 'expertise', version: '1.0', langue: 'fr' }
     },
+    {
+        chunk_id: 'DMFD_013',
+        titre: 'Blessures courantes — Prévention et gestion',
+        contenu: `Périostite tibiale : douleur face interne du tibia. Cause fréquente : augmentation volume >10%/sem. Conduite : réduire volume 50%, analyse foulée, surface souple. Repos si douleur marche.
+Tendinopathie achilléenne : douleur tendon d'Achille. Cause : changement chaussures, côtes excessives. Protocole Alfredson (excentrique) 12 sem. Repos relatif (pas d'arrêt total).
+Syndrome bandelette ilio-tibiale : douleur genou externe. Cause : déséquilibre musculaire, dévers. Renforcement hanche + étirement TFL. Éviter descente, dévers.
+Fracture de fatigue : douleur osseuse progressive qui augmente à l'effort. Repos obligatoire 6-12 sem. IRM pour confirmer. Causes : insuffisance calorique, volume excessif.
+Fascéite plantaire : douleur sous le pied au réveil. Cause : pied plat, chaussures usées. Protocole stretching + rouleau sous pied. Semelles si récidive.
+RÈGLE : toute douleur persistante >3 jours → réduire immédiatement le volume de 50% et consulter.`,
+        metadata: { discipline: 'general', cycle: 'macro', theme: 'blessure', niveau: 'tous', source: 'expertise', version: '1.0', langue: 'fr' }
+    },
+    {
+        chunk_id: 'DMFD_014',
+        titre: 'Adaptation jeunes athlètes — Contre-indications par âge',
+        contenu: `Benjamins/Minimes (<13 ans) : PAS de travail lactique pur (Z6). PAS de séries de type 3×600m à allure course. Le système anaérobie lactique n'est pas mature. Privilégier : jeux, fartlek léger, technique de course. Volume max 20-30 km/sem.
+Cadets (13-14 ans) : Introduction progressive des intervalles. PAS de plus de 2 séances qualité/semaine. Surveiller la croissance : entre 2 pics de croissance, les tendons sont très vulnérables. Ne pas augmenter volume >5%/sem.
+Juniors (15-16 ans) : VMA possible avec réserves. PAS de séances lactiques longues (>400m à >105% VMA). Maximum 3 séances qualité/semaine. Suivi biomécanique recommandé.
+RÈGLE UNIVERSELLE : si l'athlète est en période de croissance (gain >5cm en 6 mois), réduire le volume de 20% et supprimer tout travail lactique intense.`,
+        metadata: { discipline: 'general', cycle: 'macro', theme: 'blessure', niveau: 'tous', source: 'FFA', categorie: 'benjamin,minime,cadet,junior', version: '1.0', langue: 'fr' }
+    },
+    {
+        chunk_id: 'DMFD_015',
+        titre: 'Récupération avancée — Méthodes et protocoles',
+        contenu: `Méthodes de récupération classées par efficacité prouvée :
+Sommeil (★★★★★) : 7-9h minimum. GH sécrétée en phase profonde. Sieste 20-30min si séance double. Déficit chronique = -20-30% adaptations.
+Nutrition post-effort (★★★★★) : fenêtre 0-30min. 20-25g protéines + 40-60g glucides rapides. Ratio 1:2 à 1:3 protéines/glucides.
+Hydratation (★★★★☆) : 1.5× le poids perdu en eau. Boisson iso ou eau + sel si >80min d'effort.
+Compression (★★★★☆) : manchons 60-90min post-effort. Bénéfice retour veineux prouvé sur CK musculaires.
+Cryothérapie (★★★☆☆) : 10-15min à 10-15°C. Efficace post-lactique. ATTENTION : peut inhiber adaptations si surutilisée (max 2x/sem).
+Stretching (★★★☆☆) : 20-30min de stretching DOUX, 3-4h après ou lendemain. Jamais immédiatement après effort intense.
+Auto-massage / rouleau (★★★☆☆) : 15-20min sur zones ciblées. Pas sur zone douloureuse sans diagnostic médical.
+Footing récup (★★★★☆) : 20-30min Z1 (<65% FCmax) lendemain séance intense. Allure vraiment facile.`,
+        metadata: { discipline: 'general', cycle: 'micro', theme: 'recuperation', niveau: 'tous', source: 'litterature', version: '1.0', langue: 'fr' }
+    },
+    {
+        chunk_id: 'DMFD_016',
+        titre: '3000m Steeple — Planification spécifique',
+        contenu: `Le steeple exige un travail technique spécifique en plus du foncier classique.
+Technique passage obstacle : deux techniques — pied sur barrière (jambe tendue, crochet) plus économique mais requiert souplesse, ou franchissement sauté (plus rapide mais plus énergivore).
+Fosse à eau : réception 1 pied, amortissement, reprise rapide. Entraîner sur fosse réelle au moins 1x/semaine en PPS.
+Intégration obstacles : 1 séance/semaine obstacles dès PPG. Jamais commencer compétition sans 4 semaines de travail obstacle.
+Volume réduit vs 3000m plat : compenser énergie obstacles par -10% volume hebdomadaire ou récupération accrue.
+Plan PPS : Lundi repos, Mardi VMA-LONG 5×1000m Z5, Mercredi foncier Z2 + obstacles technique, Jeudi seuil Z4 20min, Vendredi récup Z1, Samedi obstacles + allure course, Dimanche sortie longue Z2.`,
+        metadata: { discipline: 'steeple', cycle: 'macro', theme: 'planification', niveau: 'regional', source: 'expertise', version: '1.0', langue: 'fr' }
+    },
+    {
+        chunk_id: 'DMFD_017',
+        titre: 'Plan type 12 semaines PPS — 800m régional',
+        contenu: `Objectif : améliorer de 1'58" à 1'54" sur 800m. Base : VMA 20 km/h, VMAn 9.2 m/s. Volume 45-55 km/sem.
+S1 Remise en route : 20×30s/30s (100% VMA), 4×12min @86% VMA, 8×400m @97% VMA. Vol 45km.
+S2 Dev. VMA : 25×30s/30s (103%), 5×1000m @95% VMA, 10×200m @107% côtes. Vol 48km.
+S3 Charge VMA+ : 3×10×30s/30s (103%), 6×800m @96% VMA, 3×500m allure 800m. Vol 52km.
+S4 Décharge : 4×800m @95%, 20×30s/30s (100%), Compétition test 1500m. Vol 38km.
+S5 Cap. lactique : 3×(3×200m @107% VMAn r45s/r5min), 5×800m @97%, 3×300m @110% VMAn. Vol 50km.
+S6 Choc lacti. : 3×600m @104% r6min, 3×(4×200m @108% r1min/r6min), 4×400m @102% VMAn r4min. Vol 54km.
+S7 Mixte : 5×1000m @95%, 2×(3×200m @107%)+2×600m @103%, Compétition 800m test. Vol 48km.
+S8 Décharge : 3×800m @97%, 4×300m @107%, Repos. Vol 36km.
+S9 Vitesse spécif. : 4×600m @104% r7min, 6×200m @108% + côtes, 2×500m + 3×200m @108%. Vol 50km.
+S10 Spécifique : 3×(2×300m @108% r1min/r8min), 4×600m @104%, Compétition principal. Vol 44km.
+S11 Affûtage : 2×600m + 4×200m @108%, 3×400m @102%, Sortie facile. Vol 32km.
+S12 Compétition : 1×600m + 3×200m vite, Léger + striding, COMPÉTITION OBJECTIF 800m. Vol 28km.`,
+        metadata: { discipline: '800m', cycle: 'meso', theme: 'planification', niveau: 'regional', source: 'expertise', version: '1.0', langue: 'fr' }
+    },
+    {
+        chunk_id: 'DMFD_018',
+        titre: 'Protocoles d\'évaluation standardisés',
+        contenu: `Tests disponibles pour évaluation athlète demi-fond :
+Test Léger-Bouvet (navette 20m) : VMA indirecte. Paliers 1min, bip progressif. Fréquence : début et fin de phase (3-4x/an).
+Test terrain VMA (demi-Cooper 6min) : VMA directe approx. Courir distance max en 6min, VMA = Dist(m)/100. Début+fin phase.
+Test 3000m ou 5min piste : VMA directe précise. VMA = 3000/(temps_sec × 3.6). Phase spécifique.
+Test seuil (30min tempo) : SL2 / allure seuil. Courir 30min à effort constant max supportable. Début PPS, calibre zones seuil.
+Test 30m lancé : VMAn. Sprint maximal après 30m élan. Chronomètré laser/GPS. 2-3 fois/an en PPG-PPS.
+Bilan RPE hebdo : questionnaire — sommeil + fatigue + motivation + douleurs (5 items 0-10). Chaque semaine.
+FC repos matinal : mesure FC 5min allongé au réveil. Quotidien ou 3x/semaine. Augmentation >5bpm sur 3j = alerte surcharge.`,
+        metadata: { discipline: 'general', cycle: 'macro', theme: 'evaluation', niveau: 'tous', source: 'FFA', version: '1.0', langue: 'fr' }
+    },
+    {
+        chunk_id: 'DMFD_019',
+        titre: 'Bilan de séance — Format standardisé',
+        contenu: `Format standardisé de bilan post-séance (pour suivi longitudinal et RAG) :
+- Type de séance : code catalogue (ex: VMA-LONG, LACTI-COURT…)
+- Séance réalisée : description libre (ex: '5×1000m, allures : 3'18, 3'19, 3'21, 3'22, 3'23')
+- Allures observées : comparaison allures cibles vs réalisées (±s/km)
+- RPE (0-10) : effort perçu global post-séance
+- RPE cible : valeur attendue selon la planification
+- FC moyenne : si capteur disponible
+- Douleurs : localisation + EVA (0-10), 'aucune' si RAS
+- Qualité sommeil veille : 1-5 (1=très mauvais, 5=excellent)
+- Météo : température en °C, vent (aucun/modéré/fort)
+- Notes entraîneur : texte libre, observations qualitatives
+- Validation plan semaine suivante : oui/non/modifier
+Ce format permet au RAG de comparer historiquement la charge perçue vs planifiée.`,
+        metadata: { discipline: 'general', cycle: 'micro', theme: 'evaluation', niveau: 'tous', source: 'expertise', version: '1.0', langue: 'fr' }
+    },
+    {
+        chunk_id: 'DMFD_020',
+        titre: 'Prompt système RAG — Template expert demi-fond',
+        contenu: `Tu es un assistant expert en planification de l'entraînement en demi-fond (800m, 1500m, 3000m, steeple).
+Tu as accès à une base de connaissances spécialisée. Tu réponds UNIQUEMENT en te basant sur les chunks de contexte fournis. Si le contexte ne contient pas l'information, dis-le clairement.
+RÈGLES ABSOLUES :
+1. Cite toujours tes sources : [CHUNK DMFD_XXX] après chaque affirmation.
+2. Calcule les allures précisément : donne TOUJOURS km/h ET min/km.
+3. Adapte la réponse au niveau de l'athlète (si fourni dans le contexte athlète).
+4. Signale les contre-indications (blessures, catégorie d'âge) si elles existent.
+5. Termine par un score de confiance : [Confiance : XX% — sources : N chunks]
+6. En cas de doute ou d'informations insuffisantes, propose 2-3 questions de clarification.
+FORMAT DE RÉPONSE :
+- Réponse principale (concise, factuelle, avec calculs si applicable)
+- Sources utilisées : liste des chunk_ids
+- Points d'attention / contre-indications
+- Score de confiance global`,
+        metadata: { discipline: 'general', cycle: 'macro', theme: 'rag-system', niveau: 'tous', source: 'expertise', version: '1.0', langue: 'fr' }
+    },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════════

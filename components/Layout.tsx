@@ -19,7 +19,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       fetch('/api/notifications?unreadOnly=true')
         .then(res => res.json())
         .then(data => setUnreadNotifications(data.unreadCount || 0))
-        .catch(() => {})
+        .catch(() => { })
     }
   }, [session])
 
@@ -30,27 +30,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navLinks = isAthlete
     ? [
-        { href: '/dashboard', label: 'Tableau de bord' },
-        { href: '/dashboard/planning', label: 'Planning' },
-        { href: '/sessions', label: 'Séances' },
-        { href: '/statistics', label: 'Statistiques' },
-        { href: '/zones', label: 'Zones' },
-        { href: '/indicators', label: 'Indicateurs' },
-        { href: '/performances', label: 'Performances' },
-      ]
+      { href: '/dashboard', label: 'Tableau de bord' },
+      { href: '/dashboard/planning', label: 'Planning' },
+      { href: '/sessions', label: 'Séances' },
+      { href: '/statistics', label: 'Statistiques' },
+      { href: '/zones', label: 'Zones' },
+      { href: '/indicators', label: 'Indicateurs' },
+      { href: '/performances', label: 'Performances' },
+    ]
     : session.user.role === 'ADMIN'
-    ? [
+      ? [
         { href: '/admin', label: 'Admin' },
         { href: '/coach', label: 'Dashboard Coach' },
         { href: '/coach/plans', label: 'Plannings' },
         { href: '/coach/athletes', label: 'Mes Athlètes' },
-        { href: '/coach/assistant', label: 'Assistant RAG' },
+        { href: '/coach/assistant', label: 'Assistant' },
       ]
-    : [
+      : [
         { href: '/coach', label: 'Dashboard Coach' },
         { href: '/coach/plans', label: 'Plannings' },
         { href: '/coach/athletes', label: 'Mes Athlètes' },
-        { href: '/coach/assistant', label: 'Assistant RAG' },
+        { href: '/coach/assistant', label: 'Assistant' },
       ]
 
   return (
@@ -65,7 +65,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 showText={true}
                 className="flex-shrink-0"
               />
-              
+
               {/* Desktop Navigation */}
               <div className="hidden lg:flex space-x-1">
                 {navLinks.map((link) => {
@@ -74,11 +74,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                        isActive
+                      className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-all ${isActive
                           ? 'text-black bg-black/5'
                           : 'text-gray-600 hover:text-black hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       {link.label}
                       {isActive && (
@@ -141,11 +140,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     key={link.href}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-4 py-2 text-sm font-medium rounded-lg ${
-                      isActive
+                    className={`block px-4 py-2 text-sm font-medium rounded-lg ${isActive
                         ? 'text-black bg-black/5'
                         : 'text-gray-600 hover:text-black hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     {link.label}
                   </Link>

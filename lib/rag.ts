@@ -161,24 +161,120 @@ export async function indexDocument(
   return inserted
 }
 
+/**
+ * Recherche RAG avec retour des sources détaillées (id, titre, similarity).
+ */
+export async function searchContextWithSources(
+  query: string,
+  limitOrOptions: number | RagSearchOptions = 5
+): Promise<{ context: string; sources: RagSource[] }> {
+  try {
+    const options: RagSearchOptions = typeof limitOrOptions === 'number'
+      ? { limit: limitOrOptions }
+      : limitOrOptions
+    const limit = options.limit || 5
+
+    const embedding = await generateEmbedding(query)
+    const vectorQuery = '[' + embedding.join(',') + ']'
+
+    const conditions: string[] = []
+    const params: unknown[] = [vectorQuery]
+    let paramIndex = 2
+
+    if (options.discipline) {
+      conditions.push(`metadata->>'discipline' = $${paramIndex}`)
+      params.push(options.discipline)
+      paramIndex++
+    }
+    if (options.theme) {
+      conditions.push(`metadata->>'theme' = $${paramIndex}`)
+      params.push(options.theme)
+      paramIndex++
+    }
+    if (options.niveau) {
+      conditions.push(`metadata->>'niveau' = $${paramIndex}`)
+      params.push(options.niveau)
+      paramIndex++
+    }
+    if (options.cycle) {
+      conditions.push(`metadata->>'cycle' = $${paramIndex}`)
+      params.push(options.cycle)
+      paramIndex++
+    }
+
+    const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : ''
+    params.push(limit)
+
+    const sql = `SELECT id, contenu, titre, source_type, 1 - (embedding <=> $1::vector) as similarity FROM rag_documents ${whereClause} ORDER BY embedding <=> $1::vector LIMIT $${paramIndex}`
+
+    const results = await prisma.$queryRawUnsafe(
+      sql,
+      ...params
+    ) as Array<{ id: string; contenu: string; titre: string; source_type: string; similarity: number }>
+
+    const context = results.map(r => '[Source: ' + r.titre + ' (' + r.id.split('_chunk_')[0] + ')]\n' + r.contenu).join('\n\n')
+    const sources: RagSource[] = results.map(r => ({
+      id: r.id.split('_chunk_')[0],
+      titre: r.titre,
+      source_type: r.source_type,
+      similarity: Number(r.similarity),
+    }))
+
+    // Deduplicate sources by id
+    const seen = new Set<string>()
+    const uniqueSources = sources.filter(s => {
+      if (seen.has(s.id)) return false
+      seen.add(s.id)
+      return true
+    })
+
+    return { context, sources: uniqueSources }
+  } catch (error) {
+    console.error('Error searching RAG context with sources:', error)
+    return { context: '', sources: [] }
+  }
+}
+
+/**
+ * System prompt expert demi-fond (DMFD_020).
+ * Injecté dans chaque requête RAG pour cadrer le comportement du LLM.
+ */
+const DMFD_SYSTEM_PROMPT = `Tu es un assistant expert en planification de l'entraînement en demi-fond (800m, 1500m, 3000m, steeple).
+Tu as accès à une base de connaissances spécialisée. Tu réponds UNIQUEMENT en te basant sur les chunks de contexte fournis. Si le contexte ne contient pas l'information, dis-le clairement.
+
+RÈGLES ABSOLUES :
+1. Cite toujours tes sources : [CHUNK DMFD_XXX] après chaque affirmation.
+2. Calcule les allures précisément : donne TOUJOURS km/h ET min/km.
+3. Adapte la réponse au niveau de l'athlète (si fourni dans le contexte athlète).
+4. Signale les contre-indications (blessures, catégorie d'âge) si elles existent.
+5. Termine par un score de confiance : [Confiance : XX% — sources : N chunks]
+6. En cas de doute ou d'informations insuffisantes, propose 2-3 questions de clarification.
+
+FORMAT DE RÉPONSE :
+- Réponse principale (concise, factuelle, avec calculs si applicable)
+- Sources utilisées : liste des chunk_ids
+- Points d'attention / contre-indications
+- Score de confiance global`
+
 export async function queryWithRag(question: string): Promise<RagQueryResult> {
-  const context = await searchContext(question, 5)
+  const { context, sources } = await searchContextWithSources(question, 5)
   if (!context) {
     return {
-      answer: "Je n'ai pas trouvé d'informations spécifiques dans ma base de connaissances pour répondre à cette question.",
+      answer: "Je n'ai pas trouvé d'informations spécifiques dans ma base de connaissances pour répondre à cette question. Essayez de reformuler votre question ou d'être plus spécifique sur la distance, le niveau ou la phase d'entraînement.",
       sources: []
     }
   }
 
-  const prompt = 'Utilise les informations suivantes pour répondre à la question. Si les informations ne permettent pas de répondre, dis-le.\n\nINFORMATIONS DE CONTEXTE:\n' + context + '\n\nQUESTION:\n' + question + '\n\nRÉPONSE:'
+  const prompt = `CONTEXTE RAG (base de connaissances demi-fond) :\n${context}\n\nQUESTION DE L'ENTRAÎNEUR :\n${question}\n\nRÉPONSE :`
 
   const answer = await generateCompletion([
-    { role: 'system', content: "Tu es un assistant expert en coaching d'athlétisme." },
+    { role: 'system', content: DMFD_SYSTEM_PROMPT },
     { role: 'user', content: prompt }
   ])
 
   return {
     answer,
-    sources: []
+    sources,
   }
 }
+

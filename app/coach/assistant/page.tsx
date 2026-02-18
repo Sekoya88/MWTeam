@@ -104,10 +104,10 @@ export default function AssistantRAGPage() {
           <div>
             <h1 className="text-3xl font-bold text-black flex items-center gap-2">
               <MessageCircle className="h-8 w-8" />
-              Assistant RAG
+              Assistant
             </h1>
             <CardDescription className="mt-1">
-              Posez des questions sur vos plans, séances et notes. Les réponses s&apos;appuient sur les documents indexés avec citations.
+              Expert demi-fond : posez vos questions sur la planification, les allures, les séances ou la physiologie. Réponses sourcées avec citations.
             </CardDescription>
           </div>
           <Button
@@ -143,7 +143,7 @@ export default function AssistantRAGPage() {
             <div className="min-h-[320px] max-h-[50vh] overflow-y-auto space-y-4 pr-2">
               {messages.length === 0 && (
                 <p className="text-gray-500 text-sm py-4">
-                  Exemples : &quot;Quel volume cette semaine pour [athlète] ?&quot;, &quot;Résume les séances seuil du mois&quot;, &quot;Notes sur la récupération&quot;
+                  Exemples : &quot;Quelle allure pour des 1000m à 95% VMA avec VMA 19 km/h ?&quot;, &quot;Construis un microcycle PPS pour spécialiste 800m&quot;, &quot;Quels tests d&apos;évaluation utiliser en début de saison ?&quot;
                 </p>
               )}
               {messages.map((m, i) => (
@@ -152,22 +152,25 @@ export default function AssistantRAGPage() {
                   className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-xl px-4 py-2.5 ${
-                      m.role === 'user'
-                        ? 'bg-black text-white'
-                        : 'bg-gray-100 text-gray-900'
-                    }`}
+                    className={`max-w-[85%] rounded-xl px-4 py-2.5 ${m.role === 'user'
+                      ? 'bg-black text-white'
+                      : 'bg-gray-100 text-gray-900'
+                      }`}
                   >
                     <p className="text-sm whitespace-pre-wrap">{m.content}</p>
                     {m.sources && m.sources.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
-                          <BookOpen className="h-3.5 w-3.5" /> Sources
+                          <BookOpen className="h-3.5 w-3.5" /> Sources ({m.sources.length})
                         </p>
                         <ul className="text-xs text-gray-600 space-y-0.5">
                           {m.sources.map((s, j) => (
-                            <li key={j}>
-                              {s.titre} <span className="text-gray-400">({s.source_type})</span>
+                            <li key={j} className="flex items-center gap-1">
+                              <span className="font-mono text-gray-400">[{s.id}]</span>
+                              {s.titre}
+                              {s.similarity != null && (
+                                <span className="text-gray-400 ml-auto">{(s.similarity * 100).toFixed(0)}%</span>
+                              )}
                             </li>
                           ))}
                         </ul>
