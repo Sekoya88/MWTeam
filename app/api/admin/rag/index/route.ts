@@ -1,11 +1,22 @@
+/**
+ * API Endpoint: POST /api/admin/rag/index
+ * 
+ * Re-indexes the RAG corpus:
+ * 1. Re-seeds all 21 DMFD knowledge chunks (preserve the expert knowledge base)
+ * 2. Indexes published plans, recent sessions, and coach notes
+ * 
+ * This endpoint is called by the "Réindexer le corpus" button.
+ */
+
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { indexDocument, deleteDocumentByIdPrefix } from '@/lib/rag'
 import { format } from 'date-fns'
+import { DMFD_CHUNKS } from '@/lib/dmfd-chunks'
 
-export const maxDuration = 120
+export const maxDuration = 300
 
 export async function POST() {
   try {
@@ -18,8 +29,33 @@ export async function POST() {
     }
 
     let totalChunks = 0
+    let dmfdChunks = 0
 
-    // 1. Plans hebdomadaires publiés (avec jours)
+    // ═══════════════════════════════════════════════════════════════════
+    // ÉTAPE 0 : Re-seed des chunks DMFD (base de connaissances expert)
+    // ═══════════════════════════════════════════════════════════════════
+    console.log('[RAG Index] Seeding DMFD knowledge base...')
+    for (const chunk of DMFD_CHUNKS) {
+      try {
+        await deleteDocumentByIdPrefix(chunk.id)
+        const n = await indexDocument(
+          chunk.id,
+          chunk.titre,
+          chunk.contenu,
+          'dmfd_knowledge_base',
+          chunk.metadata
+        )
+        dmfdChunks += n
+        totalChunks += n
+      } catch (err) {
+        console.error(`[RAG Index] Error seeding ${chunk.id}:`, err)
+      }
+    }
+    console.log(`[RAG Index] ✅ DMFD: ${dmfdChunks} chunks from ${DMFD_CHUNKS.length} documents`)
+
+    // ═══════════════════════════════════════════════════════════════════
+    // ÉTAPE 1 : Plans hebdomadaires publiés (avec jours)
+    // ═══════════════════════════════════════════════════════════════════
     const plans = await prisma.weeklyPlan.findMany({
       where: { status: 'PUBLISHED' },
       include: { days: { orderBy: { dayOfWeek: 'asc' } } },
@@ -41,7 +77,9 @@ export async function POST() {
       totalChunks += n
     }
 
-    // 2. Séances récentes (8 dernières semaines)
+    // ═══════════════════════════════════════════════════════════════════
+    // ÉTAPE 2 : Séances récentes (8 dernières semaines)
+    // ═══════════════════════════════════════════════════════════════════
     const eightWeeksAgo = new Date()
     eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
     const sessions = await prisma.trainingSession.findMany({
@@ -61,7 +99,9 @@ export async function POST() {
       totalChunks += n
     }
 
-    // 3. Notes coach
+    // ═══════════════════════════════════════════════════════════════════
+    // ÉTAPE 3 : Notes coach
+    // ═══════════════════════════════════════════════════════════════════
     const notes = await prisma.coachNote.findMany({ orderBy: { createdAt: 'desc' } })
     for (const n of notes) {
       await deleteDocumentByIdPrefix(`note_${n.id}`)
@@ -79,6 +119,8 @@ export async function POST() {
     return NextResponse.json({
       ok: true,
       totalChunks,
+      dmfdChunks,
+      dmfdDocuments: DMFD_CHUNKS.length,
       plans: plans.length,
       sessions: sessions.length,
       notes: notes.length,
@@ -86,7 +128,7 @@ export async function POST() {
   } catch (e) {
     console.error('[RAG index]', e)
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'Erreur lors de l’indexation RAG' },
+      { error: e instanceof Error ? e.message : 'Erreur lors de l\'indexation RAG' },
       { status: 500 }
     )
   }

@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { Layout } from '@/components/Layout'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { MessageCircle, Send, Loader2, BookOpen, RefreshCw } from 'lucide-react'
+import { MessageCircle, Send, Loader2, BookOpen, RefreshCw, AlertTriangle } from 'lucide-react'
 
 interface RagSource {
   id: string
@@ -26,7 +26,8 @@ export default function AssistantRAGPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [indexing, setIndexing] = useState(false)
-  const [indexStatus, setIndexStatus] = useState<{ totalChunks?: number; plans?: number; sessions?: number; notes?: number } | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [indexStatus, setIndexStatus] = useState<{ totalChunks?: number; dmfdChunks?: number; dmfdDocuments?: number; plans?: number; sessions?: number; notes?: number } | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -66,6 +67,11 @@ export default function AssistantRAGPage() {
 
   const handleReindex = async () => {
     if (indexing) return
+    if (!showConfirm) {
+      setShowConfirm(true)
+      return
+    }
+    setShowConfirm(false)
     setIndexing(true)
     setIndexStatus(null)
     try {
@@ -74,6 +80,8 @@ export default function AssistantRAGPage() {
       if (!res.ok) throw new Error(data.error || 'Erreur indexation')
       setIndexStatus({
         totalChunks: data.totalChunks,
+        dmfdChunks: data.dmfdChunks,
+        dmfdDocuments: data.dmfdDocuments,
         plans: data.plans,
         sessions: data.sessions,
         notes: data.notes,
@@ -110,27 +118,56 @@ export default function AssistantRAGPage() {
               Expert demi-fond : posez vos questions sur la planification, les allures, les séances ou la physiologie. Réponses sourcées avec citations.
             </CardDescription>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleReindex}
-            disabled={indexing}
-            className="flex items-center gap-2 shrink-0"
-          >
-            {indexing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
+          <div className="flex items-center gap-2 shrink-0">
+            {showConfirm && !indexing && (
+              <>
+                <span className="text-xs text-amber-600 flex items-center gap-1">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  Confirmer ?
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReindex}
+                  className="border-amber-500 text-amber-700 hover:bg-amber-50"
+                >
+                  Oui, réindexer
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowConfirm(false)}
+                >
+                  Annuler
+                </Button>
+              </>
             )}
-            {indexing ? 'Indexation…' : 'Réindexer le corpus'}
-          </Button>
+            {!showConfirm && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReindex}
+                disabled={indexing}
+                className="flex items-center gap-2"
+              >
+                {indexing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                {indexing ? 'Indexation en cours…' : 'Réindexer le corpus'}
+              </Button>
+            )}
+          </div>
         </div>
 
         {indexStatus && (
           <Card className="bg-gray-50 border-gray-200">
             <CardContent className="py-3 text-sm text-gray-600">
-              Dernière indexation : {indexStatus.totalChunks ?? 0} chunks
-              {indexStatus.plans != null && ` (${indexStatus.plans} plans, ${indexStatus.sessions ?? 0} séances, ${indexStatus.notes ?? 0} notes)`}
+              ✅ Indexation terminée : {indexStatus.totalChunks ?? 0} chunks au total
+              {indexStatus.dmfdDocuments != null && (
+                <span className="block mt-1">📚 Base DMFD : {indexStatus.dmfdDocuments} documents expert ({indexStatus.dmfdChunks ?? 0} chunks) — {indexStatus.plans ?? 0} plans, {indexStatus.sessions ?? 0} séances, {indexStatus.notes ?? 0} notes</span>
+              )}
             </CardContent>
           </Card>
         )}
