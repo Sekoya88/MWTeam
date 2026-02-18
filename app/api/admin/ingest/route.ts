@@ -1,14 +1,14 @@
 
 import { NextResponse } from 'next/server'
-import { HfInference } from '@huggingface/inference'
-import { prisma } from '@/lib/prisma'
+import { indexDocument } from '@/lib/rag'
 
-const HF_KEY = process.env.HUGGINGFACE_API_KEY
+export const maxDuration = 120
 
 export async function POST(request: Request) {
-    // 1. Security Check
+    // Security: use admin key from env
+    const adminKey = process.env.ADMIN_SECRET_KEY || process.env.HUGGINGFACE_API_KEY
     const authHeader = request.headers.get('x-admin-key')
-    if (!HF_KEY || authHeader !== HF_KEY) {
+    if (!adminKey || authHeader !== adminKey) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -18,36 +18,17 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid payload: documents must be array' }, { status: 400 })
         }
 
-        const hf = new HfInference(HF_KEY)
-        const RAG_EMBEDDING_MODEL = 'sentence-transformers/all-mpnet-base-v2'
-
         let processed = 0
-        const errors = []
+        const errors: Array<{ id: string; error: string }> = []
 
-        console.log(`[RAG Ingest] Received ${documents.length} documents.`)
+        console.log(`[RAG Ingest] Received ${documents.length} documents. Provider: ${process.env.EMBEDDING_PROVIDER || 'huggingface'}`)
 
         for (const doc of documents) {
             try {
-                const { id, title, content, type } = doc
-
-                // Generate Embedding
-                const embedding = await hf.featureExtraction({
-                    model: RAG_EMBEDDING_MODEL,
-                    inputs: content
-                }) as number[]
-
-                const vectorString = `[${embedding.join(',')}]`
-
-                // Insert
-                await prisma.$executeRawUnsafe(
-                    `INSERT INTO rag_documents (id, titre, contenu, source_type, embedding)
-                 VALUES ($1, $2, $3, $4, $5::vector)
-                 ON CONFLICT (id) DO UPDATE SET 
-                    contenu = EXCLUDED.contenu, 
-                    embedding = EXCLUDED.embedding`,
-                    id, title, content, type, vectorString
-                )
-                processed++
+                const { id, title, content, type, metadata } = doc
+                // Uses the provider-aware generateEmbedding (vertex or huggingface)
+                const n = await indexDocument(id, title, content, type, metadata || {})
+                processed += n
             } catch (err) {
                 console.error(`Error processing doc ${doc.id}:`, err)
                 errors.push({ id: doc.id, error: String(err) })
@@ -58,7 +39,7 @@ export async function POST(request: Request) {
             success: true,
             processed,
             errors,
-            message: `Successfully ingested ${processed} documents.`
+            message: `Successfully ingested ${processed} chunks via ${process.env.EMBEDDING_PROVIDER || 'huggingface'}.`
         })
 
     } catch (error) {
