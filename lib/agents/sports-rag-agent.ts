@@ -21,6 +21,11 @@ export interface TrainingSession {
     z3_max: number
     sprint: number
   }
+  // Agent Planificateur fields (GCP Architecture spec)
+  allure_kmh?: number
+  allure_min_km?: string
+  rpe_cible?: number
+  recuperation?: string
 }
 
 export interface Artifacts {
@@ -94,7 +99,11 @@ The output MUST conform exactly to the following schema:
              "z2_threshold": "number (km in Zone 2)",
              "z3_max": "number (km in Zone 3/VMA)",
              "sprint": "number (km in Sprint/Speed)"
-          }
+          },
+          "allure_kmh": "number (target pace in km/h, optional)",
+          "allure_min_km": "string (target pace as min:sec/km, optional)",
+          "rpe_cible": "number (target RPE 1-10, optional)",
+          "recuperation": "string (recovery description, optional)"
         }
       ]
     },

@@ -14,6 +14,7 @@
 import { GeneratePlanParams, GeneratedPlan, GeneratedDay } from '@/lib/types'
 
 import { generateCompletion } from '@/lib/llm-provider'
+import { searchContext } from '@/lib/rag'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -141,9 +142,20 @@ async function analyzeContext(context: AgentContext): Promise<ContextAnalysis> {
     return `Semaine ${new Date(p.weekStart).toLocaleDateString()}: ${total.toFixed(0)}km`
   }).join(', ') || 'Pas d\'historique'
 
+  // RAG: Retrieve physiological context
+  let ragContext = ''
+  try {
+    ragContext = await searchContext(`Physiologie demi-fond ${objective} ${period}`, {
+      limit: 3,
+      theme: 'physiologie',
+    })
+  } catch (e) {
+    console.warn('[ContextAnalyzer] RAG retrieval failed:', e)
+  }
+
   const prompt = `Tu es un analyste expert en entraînement middle distance (800m-5000m).
 
-DONNÉES ATHLÈTE:
+${ragContext ? `CONNAISSANCES EXPERT (BASE RAG):\n${ragContext}\n\n` : ''}DONNÉES ATHLÈTE:
 - CTL (Forme chronique): ${athleteStats.ctl.toFixed(1)}
 - ATL (Fatigue aiguë): ${athleteStats.atl.toFixed(1)}  
 - ACWR (Ratio charge): ${athleteStats.acwr.toFixed(2)}
@@ -237,11 +249,31 @@ async function designSessions(
 ): Promise<SessionDesign[]> {
   const { constraints } = context
 
+  // RAG: Retrieve session catalog and microcycle rules
+  let ragSessionContext = ''
+  try {
+    ragSessionContext = await searchContext(`Catalogue séances types demi-fond planification microcycle`, {
+      limit: 3,
+      theme: 'catalogue-seances',
+    })
+    // Also get microcycle rules
+    const microRules = await searchContext(`Règles construction microcycle hebdomadaire`, {
+      limit: 2,
+      theme: 'planification',
+      cycle: 'micro',
+    })
+    if (microRules) ragSessionContext += '\n\n' + microRules
+  } catch (e) {
+    console.warn('[SessionDesigner] RAG retrieval failed:', e)
+  }
+
   const structureDesc = structure.days.map(d =>
     `${d.dayName}: ${d.sessionType} (${d.intensityLevel}) - ${d.focus}`
   ).join('\n')
 
   const prompt = `Tu es un coach expert middle distance (800m-5000m). Compose les séances DÉTAILLÉES.
+
+${ragSessionContext ? `RÉFÉRENTIEL SÉANCES EXPERT (BASE RAG):\n${ragSessionContext}\n` : ''}
 
 PROFIL ATHLÈTE:
 - Niveau: ${analysis.athleteProfile.level}
@@ -504,5 +536,5 @@ export async function generatePlanWithAgents(
   return {
     objective: `${objective} - ${period} | Score: ${quality.score}/100`,
     days: finalDays.sort((a, b) => a.day - b.day),
-  }
+  } as GeneratedPlan
 }

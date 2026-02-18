@@ -1,15 +1,17 @@
 import { HfInference } from '@huggingface/inference'
 import { prisma } from '@/lib/prisma'
 import { generateCompletion } from './llm-provider'
+import { vertexEmbedding } from './vertex-embeddings'
 
 const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY
 const RAG_EMBEDDING_MODEL = 'sentence-transformers/all-mpnet-base-v2' // Dimension 768
+const EMBEDDING_PROVIDER = (process.env.EMBEDDING_PROVIDER || 'huggingface').toLowerCase()
 
-if (!HUGGINGFACE_API_KEY) {
-  console.warn('HUGGINGFACE_API_KEY not set, RAG will not function properly.')
+if (EMBEDDING_PROVIDER === 'huggingface' && !HUGGINGFACE_API_KEY) {
+  console.warn('HUGGINGFACE_API_KEY not set and EMBEDDING_PROVIDER=huggingface. RAG may not work.')
 }
 
-const hf = new HfInference(HUGGINGFACE_API_KEY)
+const hf = HUGGINGFACE_API_KEY ? new HfInference(HUGGINGFACE_API_KEY) : null
 
 export interface RagSource {
   id: string
@@ -23,7 +25,27 @@ export interface RagQueryResult {
   sources: RagSource[]
 }
 
+export interface RagSearchOptions {
+  limit?: number
+  discipline?: string
+  theme?: string
+  niveau?: string
+  cycle?: string
+}
+
+/**
+ * Génère un embedding via le provider configuré (vertex ou huggingface).
+ * Les deux produisent des vecteurs 768 dimensions → compatibles pgvector.
+ */
 export async function generateEmbedding(text: string): Promise<number[]> {
+  if (EMBEDDING_PROVIDER === 'vertex') {
+    return vertexEmbedding(text)
+  }
+
+  // Fallback HuggingFace
+  if (!hf) {
+    throw new Error('HuggingFace client not initialized (missing API key)')
+  }
   try {
     const output = await hf.featureExtraction({
       model: RAG_EMBEDDING_MODEL,
@@ -31,20 +53,64 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     })
     return output as number[]
   } catch (error) {
-    console.error('Error generating embedding:', error)
+    console.error('Error generating embedding (HF):', error)
     throw error
   }
 }
 
-export async function searchContext(query: string, limit: number = 3): Promise<string> {
+/**
+ * Recherche de contexte RAG avec filtrage optionnel par métadonnées DMFD.
+ */
+export async function searchContext(
+  query: string,
+  limitOrOptions: number | RagSearchOptions = 3
+): Promise<string> {
   try {
+    const options: RagSearchOptions = typeof limitOrOptions === 'number'
+      ? { limit: limitOrOptions }
+      : limitOrOptions
+    const limit = options.limit || 3
+
     const embedding = await generateEmbedding(query)
     const vectorQuery = '[' + embedding.join(',') + ']'
 
+    // Build WHERE clause with metadata filters
+    const conditions: string[] = []
+    const params: unknown[] = [vectorQuery]
+    let paramIndex = 2
+
+    if (options.discipline) {
+      conditions.push(`metadata->>'discipline' = $${paramIndex}`)
+      params.push(options.discipline)
+      paramIndex++
+    }
+    if (options.theme) {
+      conditions.push(`metadata->>'theme' = $${paramIndex}`)
+      params.push(options.theme)
+      paramIndex++
+    }
+    if (options.niveau) {
+      conditions.push(`metadata->>'niveau' = $${paramIndex}`)
+      params.push(options.niveau)
+      paramIndex++
+    }
+    if (options.cycle) {
+      conditions.push(`metadata->>'cycle' = $${paramIndex}`)
+      params.push(options.cycle)
+      paramIndex++
+    }
+
+    const whereClause = conditions.length > 0
+      ? 'WHERE ' + conditions.join(' AND ')
+      : ''
+
+    params.push(limit)
+
+    const sql = `SELECT id, contenu, titre, 1 - (embedding <=> $1::vector) as similarity FROM rag_documents ${whereClause} ORDER BY embedding <=> $1::vector LIMIT $${paramIndex}`
+
     const results = await prisma.$queryRawUnsafe(
-      'SELECT id, contenu, titre, 1 - (embedding <=> $1::vector) as similarity FROM rag_documents ORDER BY embedding <=> $1::vector LIMIT $2',
-      vectorQuery,
-      limit
+      sql,
+      ...params
     ) as Array<{ id: string; contenu: string; titre: string; similarity: number }>
 
     return results.map(r => '[Source: ' + r.titre + ']\n' + r.contenu).join('\n\n')

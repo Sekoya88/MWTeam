@@ -2,6 +2,7 @@ import { calculateTargetVolume, VolumeTarget } from './volume-calculator'
 import { generatePlanWithAgents } from './agents/orchestrator'
 import { generateCompletion } from './llm-provider'
 import { searchContext } from './rag'
+import { SportsRagAgent } from './agents/sports-rag-agent'
 
 export interface GeneratePlanParams {
   athleteStats: {
@@ -62,11 +63,20 @@ export async function generateWeeklyPlan(params: GeneratePlanParams, useAgents: 
   // Calculer le volume cible intelligent
   const volumeTarget = calculateTargetVolume(athleteStats, objective, period);
 
-  // 🧠 RAG: Récupérer des connaissances expertes
+  // 🧠 RAG: Récupérer des connaissances expertes avec filtrage
   let ragContext = '';
   try {
     const query = `Plan entrainement ${objective} ${period} course à pied 800m 1500m`
-    ragContext = await searchContext(query, 2)
+    ragContext = await searchContext(query, {
+      limit: 3,
+      theme: 'planification',
+    })
+    // Also get session catalog
+    const sessionCatalog = await searchContext(`Catalogue séances types ${objective}`, {
+      limit: 2,
+      theme: 'catalogue-seances',
+    })
+    if (sessionCatalog) ragContext += '\n\n' + sessionCatalog
   } catch (err) {
     console.warn('RAG Search failed:', err)
   }
